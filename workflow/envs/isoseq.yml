@@ -1,0 +1,9 @@
+name: isoseq
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+dependencies:
+  - isoseq=4.0.0=h9ee0642_0
+prefix: /ohta1/bianca.sacchi/miniconda3/envs/isoseq

@@ -1,2 +1,4 @@
 results/*.bam
 *.bam
+resources/merged_TX_noMatPAR.fa
+resources/merged_TX_noMatPAR.mmi
