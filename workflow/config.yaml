@@ -1,0 +1,14 @@
+samples: 
+  - 1
+  - 2
+  - 3
+  - 4
+  
+
+genome: "../resources/merged_TX_noMatPARlarge.fa"
+anno: "../resources/merged_TX_noMatPAR.modified"
+in_bam: "../resources/flnc-"
+output_dir: "../results/"
+log_dir: "../logs/"
+tmp_dir: "/ohta2/bianca.sacchi/tmp/"
+

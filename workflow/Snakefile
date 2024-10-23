@@ -1,17 +1,112 @@
 import os
-import glob
-import pandas as pd
 
-samples = ["1","2","3","4"]
+## config
+
+configfile: "config.yaml"
+
+SAMPLES = [1,2,3,4]
+
+## rules
 
 rule all:
     input:
+        bam = expand(config['output_dir'] + "remapped_{s}.bam", s = SAMPLES),
+        gff = expand(config['output_dir'] + "collapsed_{s}.gff", s=SAMPLES),
+        gtfsort = config['anno'] + ".sorted.gtf", # sorted annotation gff
+        gffsort = expand(config['output_dir'] + 'collapsed_{s}.sorted.gff', s = SAMPLES), # sorted collapsed
+        classify = expand(config['output_dir'] + "classify_{s}/", s = SAMPLES), # classify output directory 
+        filt = expand(config['log_dir'] + "log_filter_{s}.log", s = SAMPLES) # unknown output location, use this instead. be wary about deleting if needing to rerun.
+## align reads to reference
+rule align:
+    input: 
+        ref = config['genome'],
+        bam = config['in_bam'] + "{s}.bam"  
+    output:
+        bam = config['output_dir'] + "remapped_{s}.bam",
+        report = config['output_dir'] + "mapping_stats_{s}.report.json"
+    log:
+        log = config['log_dir']+"pbmm2_{s}.log", 
+        alarms = config['log_dir'] + "pbmm2_alarms_{s}.json"
+    conda:
+        "isoseq"
+    threads: 10
+    resources:
+        tmpdir = config['tmp_dir']
+    shell: 
+         """
+         pbmm2 align {input.ref} {input.bam} {output.bam} \
+             --sort --min-gap-comp-id-perc 95.0 --min-length 50 \
+             --report-json {output.report} --preset ISOSEQ \
+             -j {threads} --log-level DEBUG --log-file {log.log} --alarms {log.alarms}
+         """
+
+rule collapse:
+   input: 
+       mapped_bam = config['output_dir'] + "remapped_{s}.bam",
+       flnc = config['in_bam'] + "{s}.bam"
+   output:
+       gff = config['output_dir'] + "collapsed_{s}.gff",
+       flnc = config['output_dir']  + "collapsed_{s}.flnc_count.txt"
+   log:
+      log = config['log_dir'] + 'isoseq_collapse_{s}.log'
+   conda:
+      "isoseq"
+   resources:
+       tmpdir = config['tmp_dir']
+   threads: 8
+   shell:
+       """
+       isoseq collapse --do-not-collapse-extra-5exons --log-level DEBUG --log-file {log} --num-threads {threads} {input.mapped_bam} {input.flnc} {output.gff} 
+       """ 
+       
+rule prepare_ref:
+    input: 
+        anno = config['anno'] + ".gtf",
+        ref = config['genome'] 
+    output:
+        gtf = config['anno'] + ".sorted.gtf"
+    conda:
+        "isoseq"
+    resources:
+        tmpdir = config['tmp_dir']
+    shell: 
+        "pigeon prepare {input.anno} {input.ref}"
+
+rule prepare_gff:
+    input: 
+      gff = config['output_dir'] + "collapsed_{s}.gff"
+    output:
+       gff  = config['output_dir'] + 'collapsed_{s}.sorted.gff' 
+    log: 
+       log = config['log_dir'] + 'pigeon_prep_gff_{s}.log'
+    conda: "isoseq"
+    resources:
+        tmpdir = config['tmp_dir']
+    shell:
+       "pigeon prepare {input}"
+
+rule classify:
+    input: 
+        gff = config['anno'] + ".sorted.gtf",
+        collapsed = config['output_dir'] + "collapsed_{s}.sorted.gff",
+        flcounts = config['output_dir'] + 'collapsed_{s}.flnc_count.txt'
+    threads: 8
+    conda: "isoseq"
+    resources:
+        tmpdir = config['tmp_dir']
+    log: config['log_dir'] + "log_classify_{s}.log"
+    output:
+        dir = directory(config['output_dir'] + 'classify_{s}/')
+    shell: "pigeon classify {input.collapsed} {input.gff} {rules.prepare_ref.input.ref} --fl {input.flcounts} --log-level DEBUG --log-file {log} -d {output.dir}"
 
 
-
-
-
-
-
-
-
+rule filter:
+    input: 
+        classify = config['output_dir'] + 'classify_{s}/collapsed_{s}_classification.txt',
+        gff = config['output_dir'] + 'collapsed_{s}.sorted.gff'
+    threads: 8
+    conda: "isoseq"
+    resources:
+        tmpdir = config['tmp_dir']
+    log: config['log_dir'] + "log_filter_{s}.log"
+    shell: "pigeon filter {input.classify} --isoforms {input.gff} --log-level DEBUG --log-file {log}"
