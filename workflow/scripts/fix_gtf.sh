@@ -12,6 +12,6 @@ for line in sys.stdin:
        if fields[2]=="gene":
          fields[8] = fields[8].replace("Name=","gene_name=")
     sys.stdout.write("\t".join(fields))
-' >merged_tx_noMatPAR.modified.gff
+' >merged_TX_noMatPAR.modified.gff
 
-gffread merged_tx_noMatPAR.modified.gff -T --keep-genes -o merged_tx_noMatPAR.modified.gtf
+gffread merged_TX_noMatPAR.modified.gff -T --keep-genes -o merged_TX_noMatPAR.modified.gtf
