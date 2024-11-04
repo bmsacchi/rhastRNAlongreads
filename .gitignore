@@ -1,5 +1,13 @@
 resources/
-results/
+results/*.fast*
+results/*.bam*
+results/*.gff*
+results/*.txt
+results/classify_1/
+results/classify_2/
+results/classify_3/
+results/classify_4/
+results/*.json
 logs/
 troubleshooting/
 outputs/

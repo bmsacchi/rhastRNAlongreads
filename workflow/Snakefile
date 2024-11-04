@@ -29,7 +29,7 @@ rule align:
         alarms = config['log_dir'] + "pbmm2_alarms_{s}.json"
     conda:
         "isoseq"
-    threads: 10
+    threads: 20
     resources:
         tmpdir = config['tmp_dir']
     shell: 
@@ -99,7 +99,6 @@ rule classify:
         dir = directory(config['output_dir'] + 'classify_{s}/')
     shell: "pigeon classify {input.collapsed} {input.gff} {rules.prepare_ref.input.ref} --fl {input.flcounts} --log-level DEBUG --log-file {log} -d {output.dir}"
 
-
 rule filter:
     input: 
         classify = config['output_dir'] + 'classify_{s}/collapsed_{s}_classification.txt',
@@ -110,3 +109,6 @@ rule filter:
         tmpdir = config['tmp_dir']
     log: config['log_dir'] + "log_filter_{s}.log"
     shell: "pigeon filter {input.classify} --isoforms {input.gff} --log-level DEBUG --log-file {log}"
+
+
+
