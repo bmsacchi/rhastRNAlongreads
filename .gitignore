@@ -14,3 +14,4 @@ outputs/
 mapping_stats.report.json
 pbmm2.log
 workflow/.snakemake/
+.Rproj.user
